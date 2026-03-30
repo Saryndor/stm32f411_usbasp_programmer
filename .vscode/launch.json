@@ -1,0 +1,72 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug STM32 (OpenOCD/stlink)",
+      "type": "cortex-debug",
+      "request": "launch",
+      "servertype": "openocd",
+      "cwd": "${workspaceRoot}",
+      "executable": "${command:cmake.launchTargetPath}",
+      "preLaunchTask": "CMake: build",
+      "configFiles": [
+        "interface/stlink.cfg",
+        "target/stm32f4x.cfg"
+      ],
+      "gdbPath": "/opt/gcc-arm-none-eabi/bin/arm-none-eabi-gdb",
+      "runToEntryPoint": "main",
+      "svdFile": "${workspaceFolder}/STM32F411.svd",
+      "showDevDebugOutput": "none",
+      "postLaunchCommands": [
+        "monitor $_TARGETNAME configure -event gdb-detach { reset run }"
+      ],
+    },
+    {
+      "name": "Debug STM32 (OpenOCD/JLink)",
+      "type": "cortex-debug",
+      "request": "launch",
+      "servertype": "openocd",
+      "cwd": "${workspaceRoot}",
+      "executable": "${command:cmake.launchTargetPath}",
+      "preLaunchTask": "CMake: build",
+      "configFiles": [
+        ".openocd/jlink.cfg"
+      ],
+      "rttConfig": {
+        "enabled": true,
+        "address": "auto",
+        "clearStatus": true,
+        "decoders": [
+            {
+                "port": 0,
+                "type": "console"
+            }
+        ]
+      },
+      "gdbPath": "/opt/gcc-arm-none-eabi/bin/arm-none-eabi-gdb",
+      "runToEntryPoint": "main",
+      "svdFile": "${workspaceFolder}/STM32F411.svd",
+      "showDevDebugOutput": "none",
+      "postLaunchCommands": [
+        "monitor $_TARGETNAME configure -event gdb-detach { reset run }"
+      ],
+    },
+    {
+      "name": "BMP Debug",
+      "type": "cortex-debug",
+      "servertype": "bmp",
+      "request": "launch",
+      "cwd": "${workspaceRoot}",
+      "executable": "${command:cmake.launchTargetPath}",
+      "preLaunchTask": "CMake: build",
+      "interface": "swd",
+      "device": "STM32F411",
+      // "BMPGDBSerialPort": "/dev/serial/by-id/usb-Black_Magic_Debug_Black_Magic_Probe__ST-Link_v2__v2.0.0-292-ge1505ef8-dirty_C3BD9710-if00",
+      // "BMPGDBSerialPort": "/dev/serial/by-id/usb-Black_Magic_Debug_Black_Magic_Probe*-if00",
+      "BMPGDBSerialPort": "host.containers.internal:2100",
+      "runToEntryPoint": "main",
+      "gdbPath": "/opt/gcc-arm-none-eabi/bin/arm-none-eabi-gdb",
+      "svdFile": "${workspaceFolder}/STM32F411.svd"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "arm-none-eabi",
+      "displayName": "arm-none-eabi 15.2.1  (Container)",
+      "description": "arm-none-eabi 15.2.1 (Container)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchain-arm-none-eabi-gcc.cmake"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default-build",
+      "displayName": "Build Active Project",
+      "configurePreset": "arm-none-eabi",
+      "targets": ["firmware"]
+    }
+  ]
+}

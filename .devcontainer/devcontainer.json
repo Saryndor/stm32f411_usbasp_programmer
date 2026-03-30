@@ -1,0 +1,40 @@
+{
+    "name": "${localWorkspaceFolderBasename}",
+    "image": "f4-usbasp-eabi:15.2",
+    "remoteUser": "arm-none-eabi",
+    "workspaceFolder": "/workspace/${localWorkspaceFolderBasename}",
+    "mounts": [
+        "source=${localWorkspaceFolder},target=/workspace/${localWorkspaceFolderBasename},type=bind,consistency=cached",
+        "source=${localEnv:SSH_AUTH_SOCK},target=/tmp/vscode-ssh-auth.sock,type=bind",
+        "source=/media/podman_data/vscode-server-cache,target=/home/arm-none-eabi/.vscode-server,type=bind"
+    ],
+    "containerEnv": {
+        "SSH_AUTH_SOCK": "/tmp/vscode-ssh-auth.sock"
+    },
+    "runArgs": [
+        "--name=arm-dev-${localWorkspaceFolderBasename}",
+        "--userns=keep-id",
+        "-v", "/dev/bus/usb:/dev/bus/usb",
+        "--privileged",
+        "--add-host=host.containers.internal:host-gateway"
+    ],
+
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools",
+                "ms-vscode.cpptools-themes",
+                "marus25.cortex-debug",
+                "actboy168.tasks"
+            ],
+            "settings": {
+                "cmake.generator": "Ninja",
+                "cmake.sourceDirectory": "${workspaceFolder}",
+                "cmake.configureArgs": [
+                    "-DCMAKE_TOOLCHAIN_FILE=${workspaceFolder}/cmake/toolchain-arm-none-eabi-gcc.cmake"
+                ]
+            }
+        }
+    }
+}

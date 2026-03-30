@@ -1,0 +1,7 @@
+[
+  {
+    "name": "Arm GNU Toolchain 15.2.Rel1",
+    "toolchainFile": "${workspaceFolder}/cmake/toolchain-arm-none-eabi-gcc.cmake",
+    "description": "Compiler for arm in /opt/gcc-arm-none-eabi/..."
+  }
+]

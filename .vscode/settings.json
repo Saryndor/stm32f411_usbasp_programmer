@@ -1,0 +1,6 @@
+{
+  "cmake.additionalKits": [
+        ".vscode/cmake-kits.json"
+  ],
+  "cmake.configureOnOpen": true,  
+}
