@@ -1,6 +1,7 @@
 // usb_callbacks.c
 
 #include <libopencm3/stm32/usart.h>
+#include <libopencm3/cm3/scb.h>
 #include "tusb.h"
 #include <stdbool.h>
 #include "usb_descriptors.h"
@@ -47,6 +48,22 @@ void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts) {
 void tud_cdc_line_coding_cb(uint8_t itf, cdc_line_coding_t const* p)
 {
     (void) itf;
+
+    // Activate software reset when 1200 baud are detected
+    if (p->bit_rate == 1200) {
+        /* Define the magic address for STM32F411 (128KB RAM) */
+        /* Address = 0x20000000 + 128KB - 4 bytes */
+        volatile uint32_t *magic_addr = (uint32_t *) 0x2000FFFC;
+
+        /* Set the magic token expected by Adafruit UF2 Bootloader */
+        *magic_addr = 0xf01669ef;
+
+        /* Ensure memory write is finished */
+        __asm__ volatile ("dmb sy");
+
+        /* Trigger a software reset to jump into the bootloader */
+        scb_reset_system();
+    }
     
     // Map TinyUSB line coding to UART2 config
     // Only baudrate here for brevity

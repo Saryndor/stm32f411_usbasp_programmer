@@ -59,6 +59,5 @@
             "command": "cmake --build build --target bmp-flash",
             "problemMatcher": []
         }
-
     ]
 }

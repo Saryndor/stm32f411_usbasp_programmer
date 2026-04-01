@@ -1,98 +1,107 @@
+/*
+ * Linker script for STM32F411CE with TinyUF2 compatibility (64K RAM split)
+ */
+
+/* Entry Point */
+ENTRY(reset_handler)
+
+/* Specify the memory areas */
 MEMORY
 {
-    rom (rx) : ORIGIN = 0x08000000, LENGTH = 512K
-    ram (rwx): ORIGIN = 0x20000000, LENGTH = 128K
+    rom (rx)        : ORIGIN = 0x08010000, LENGTH = 512K - 64K
+    
+    /* * ram_lower ends at 0x2000FFFB. 
+     * The 4 bytes at 0x2000FFFC are the "hole" for the bootloader magic.
+     */
+    ram_lower (rwx) : ORIGIN = 0x20000000, LENGTH = 64K - 4
+    
+    /* ram_upper starts at 0x20010000, leaving 4 bytes unused between them */
+    ram_upper (rwx) : ORIGIN = 0x20010000, LENGTH = 64K
 }
 
-/* INCLUDE cortex-m-generic.ld */
-
-/* Enforce emmition of the vector table. */
+/* Enforce emission of the vector table. */
 EXTERN (vector_table)
-
-/* Define the entry point of the output file. */
-ENTRY(reset_handler)
 
 /* Define sections. */
 SECTIONS
 {
-	.text : {
-		KEEP(*(.vectors)) /* Vector table */
-		*(.text*)	/* Program code */
-		. = ALIGN(4);
-		*(.rodata*)	/* Read-only data */
-		. = ALIGN(4);
-	} >rom
+    .text : {
+        KEEP(*(.vectors))
+        *(.text*)
+        . = ALIGN(4);
+        *(.rodata*)
+        . = ALIGN(4);
+    } >rom
 
-	/* C++ Static constructors/destructors, also used for __attribute__
-	 * ((constructor)) and the likes */
-	.preinit_array : {
-		. = ALIGN(4);
-		__preinit_array_start = .;
-		KEEP (*(.preinit_array))
-		__preinit_array_end = .;
-	} >rom
-	.init_array : {
-		. = ALIGN(4);
-		__init_array_start = .;
-		KEEP (*(SORT(.init_array.*)))
-		KEEP (*(.init_array))
-		__init_array_end = .;
-	} >rom
-	.fini_array : {
-		. = ALIGN(4);
-		__fini_array_start = .;
-		KEEP (*(.fini_array))
-		KEEP (*(SORT(.fini_array.*)))
-		__fini_array_end = .;
-	} >rom
+    .preinit_array : {
+        . = ALIGN(4);
+        __preinit_array_start = .;
+        KEEP (*(.preinit_array))
+        __preinit_array_end = .;
+    } >rom
 
-	/*
-	 * Another section used by C++ stuff, appears when using newlib with
-	 * 64bit (long long) printf support
-	 */
-	.ARM.extab : {
-		*(.ARM.extab*)
-	} >rom
-	.ARM.exidx : {
-		__exidx_start = .;
-		*(.ARM.exidx*)
-		__exidx_end = .;
-	} >rom
+    .init_array : {
+        . = ALIGN(4);
+        __init_array_start = .;
+        KEEP (*(SORT(.init_array.*)))
+        KEEP (*(.init_array))
+        __init_array_end = .;
+    } >rom
 
-	. = ALIGN(4);
-	_etext = .;
+    .fini_array : {
+        . = ALIGN(4);
+        __fini_array_start = .;
+        KEEP (*(.fini_array))
+        KEEP (*(SORT(.fini_array.*)))
+        __fini_array_end = .;
+    } >rom
 
-	/* ram, but not cleared on reset, eg boot/app comms */
-	.noinit (NOLOAD) : {
-		*(.noinit*)
-	} >ram
-	. = ALIGN(4);
+    .ARM.extab : {
+        *(.ARM.extab*)
+    } >rom
 
-	.data : {
-		_data = .;
-		*(.data*)	/* Read-write initialized data */
-		*(.ramtext*)    /* "text" functions to run in ram */
-		. = ALIGN(4);
-		_edata = .;
-	} >ram AT >rom
-	_data_loadaddr = LOADADDR(.data);
+    .ARM.exidx : {
+        __exidx_start = .;
+        *(.ARM.exidx*)
+        __exidx_end = .;
+    } >rom
 
-	.bss : {
-		*(.bss*)	/* Read-write zero initialized data */
-		*(COMMON)
-		. = ALIGN(4);
-		_ebss = .;
-	} >ram
+    . = ALIGN(4);
+    _etext = .;
 
-	/*
-	 * The .eh_frame section appears to be used for C++ exception handling.
-	 * You may need to fix this if you're using C++.
-	 */
-	/DISCARD/ : { *(.eh_frame) }
+    /* All variable data sections now use ram_lower */
+    .noinit (NOLOAD) : {
+        *(.noinit*)
+    } >ram_lower
 
-	. = ALIGN(4);
-	end = .;
+    .data : {
+        . = ALIGN(4);
+        _data = .;
+        *(.data*)
+        *(.ramtext*)
+        . = ALIGN(4);
+        _edata = .;
+    } >ram_lower AT >rom
+    _data_loadaddr = LOADADDR(.data);
+
+    .bss : {
+        . = ALIGN(4);
+        _sbss = .;
+        *(.bss*)
+        *(COMMON)
+        . = ALIGN(4);
+        _ebss = .;
+    } >ram_lower
+
+    /DISCARD/ : { *(.eh_frame) }
+
+    . = ALIGN(4);
+    end = .;
 }
 
-PROVIDE(_stack = ORIGIN(ram) + LENGTH(ram));
-
+/* * The stack starts at the very end of ram_upper (0x20020000).
+ * This ensures the stack has its own 64K and won't collide with 
+ * the magic token area at 0x2000FFFC.
+ */
+_estack = ORIGIN(ram_upper) + LENGTH(ram_upper);
+PROVIDE(_stack = _estack);

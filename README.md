@@ -31,6 +31,7 @@ This project turns a Blackpill into a robust AVR In-System Programmer (ISP) capa
 - **Integrated CDC Serial Bridge:** Provides a virtual serial port (USB CDC) to communicate with the target's UART (e.g., debug output) without needing an extra USB-TTL adapter.
 - **Extended Protocol:** Supports extended addressing for large Flash (>128kB) and robust page-writing logic.
 - **Double Buffered USB:** Efficient endpoint handling to maximize throughput.
+- **UF2 Bootloader:** Simple way for firmware updates (Thanks to Adafruit)
 
 ## Hardware Setup
 
@@ -46,7 +47,7 @@ This project turns a Blackpill into a robust AVR In-System Programmer (ISP) capa
 | **TX** | PA2 | UART2 TX (Connected to Target RX) |
 | **RX** | PA3 | UART2 RX (Connected to Target TX)|
 | **OE** | PA4 | Output Enable HCT245 |
-| **MISO-PWR** | PA5 | MISO Pull-Up Power Control |
+| **MISO-PWR** | PA5 | MISO Pull-Up Power Control (Active during programming) |
 
 
 ### Recommended Circuit
@@ -74,7 +75,7 @@ A **BAT85 Schottky Diode** configuration protects the MISO input:
 
 ## Flashing Firmware (Blackpill)
 
-### Activate Bootloader Mode
+### Activate Bootloader Mode (First Flash w/o UF2 Bootloader)
 
 - **Option 1:**
    1. Hold down the **BOOT0** button.
@@ -90,14 +91,28 @@ A **BAT85 Schottky Diode** configuration protects the MISO input:
    
 When the Blackpill is in Bootloader Mode, you can use `sudo dfu-util -l` to verify the state.
 
-> ⚠️ **Note:** If you're having trouble putting the Blackpill into bootloader mode, it might help to slightly warm up the PCB.
+> ⚠️ **Note:** If you're having trouble putting the Blackpill into bootloader mode, it might help to slightly warm up the PCB and **avoiding** a connection over a USB hub. It might also be an **advantage** to use a USB 2.0 port.
  
 #### Flash firmware
 
 ```bash
-sudo dfu-util -a 0 -s 0x08000000:leave -D firmware.bin
+sudo dfu-util -a 0 -s 0x08000000:leave -D bootloader_firmware.bin
 ```
 -----
+
+### Activate UF2 Bootloader Mode 
+
+There are two choices to activate the uf2 bootloader.
+
+  1. Press the reset button twice within 500 ms
+  2. Change the baud rate to 1200 for the cdc port, e.g.
+      ```bash
+      stty -F /dev/ttyACM0 1200
+      ```
+Once activation is complete, a drive named `STM411BOOT` should appear.
+Put the file `firmware.uf2` to the drive and the flash process should start automatically.
+
+---
 
 ### Linux Setup (udev rules)
 
@@ -296,7 +311,15 @@ Avrdude done.  Thank you.
       cmake --build build
       ```
 
-      After this step you should see the firmware files as part of the `build` folder
+      After a successful build you should see the firmware files as part of the `build` folder
+
+      | File | Description | Usage |
+      | :--- | :--- | :--- |
+      | `firmware.elf` | Application with debug symbols | **Debugging** via GDB/SVD. |
+      | `firmware.bin` | Raw application data | Base for the UF2 image. |
+      | `firmware.uf2` | Application in UF2 format | **Update** via USB drive (Drag & Drop). |
+      | `bootloader_firmware.bin` | Full image (Bootloader + App). | **Initial flash** new hardware |
+      | `bootloader_firmware.elf` | Full image as ELF container | **Flash** via ST-Link / J-Link / Black Magic Probe. |
 
 
 6.  **Uploading Firmware:**

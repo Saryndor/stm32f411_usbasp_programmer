@@ -76,38 +76,54 @@ endif()
 function(stm32_add_flash_targets TARGET)
 
     add_custom_target(stlink-flash
-      bash -c "openocd -f /usr/share/openocd/scripts/interface/stlink.cfg \
-                -f /usr/share/openocd/scripts/target/stm32f4x.cfg \
-                -c 'reset_config none; program ${TARGET}.elf verify reset exit' \
-                -d0"
+      openocd -f /usr/share/openocd/scripts/interface/stlink.cfg
+              -f /usr/share/openocd/scripts/target/stm32f4x.cfg
+              -c "init"
+              -c "reset halt"
+              -c "reset_config none"
+              -c "flash protect 0 0 3 off"
+              -c "program ${TARGET} verify reset exit"
+              -d0
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-      DEPENDS ${TARGET}
+      DEPENDS ${TARGET} ${BOOTLOADER_BIN}
       VERBATIM
     )
 
     add_custom_target(jlink-flash
-      bash -c "openocd -f ${CMAKE_SOURCE_DIR}/.openocd/jlink.cfg \
-                -c 'reset_config none; program ${TARGET}.elf verify reset exit' \
-                -d0"
+      openocd -f ${CMAKE_SOURCE_DIR}/.openocd/jlink.cfg
+              -c "reset_config none"
+              -c "init"
+              -c "reset halt"
+              -c "flash protect 0 0 3 off"
+              -c "program ${TARGET} verify reset exit"
+              -d0
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-      DEPENDS ${TARGET}
+      DEPENDS ${TARGET} ${BOOTLOADER_BIN}
       VERBATIM
     )
 
     add_custom_target(bmp-flash
-      bash -c "arm-none-eabi-gdb \
-                  -nx \
-                  --batch \
-                  -ex 'target extended-remote host.containers.internal:2100' \
-                  -ex 'monitor swd_scan' \
-                  -ex 'mon freq 4000000' \
-                  -ex 'att 1' \
-                  -ex 'load' \
-                  -ex 'compare-sections' \
-                  -ex 'kill' \
-                  ${TARGET}.elf"
+      arm-none-eabi-gdb
+              -nx
+              --batch
+              -ex "target extended-remote host.containers.internal:2100"
+              -ex "monitor swd_scan"
+              -ex "mon freq 4000000"
+              -ex "att 1"
+              -ex "monitor halt"
+              -ex "monitor unlock"
+              -ex "file ${TARGET}"
+              -ex "load"
+              -ex "compare-sections"
+              -ex "kill"
+              -ex "quit"
       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-      DEPENDS ${TARGET}
+      DEPENDS ${TARGET} ${BOOTLOADER_BIN}
       VERBATIM
+    )
+
+    add_custom_target(uf2-bootloader
+        COMMAND stty -F /dev/ttyACM0 1200 || true
+        COMMENT "Triggering 1200 baud touch to enter bootloader..."
     )
 endfunction()

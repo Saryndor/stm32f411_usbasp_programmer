@@ -5,6 +5,7 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/cm3/nvic.h>
+#include <libopencm3/cm3/scb.h>
 
 #include "tusb.h"
 #include "hw_spi.h"
@@ -78,6 +79,7 @@ static void usb_setup(void)
 // ---------------------------------------------------------------------------
 int main(void)
 {
+    SCB_VTOR = 0x08010000; // TinyUF2
 
     // Disable buffering for stdout/stderr (useful for printf via CDC later)
     setvbuf(stdout, NULL, _IONBF, 0);
