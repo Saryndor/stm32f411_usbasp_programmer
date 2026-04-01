@@ -109,8 +109,11 @@ There are two choices to activate the uf2 bootloader.
       ```bash
       stty -F /dev/ttyACM0 1200
       ```
+
+### Upload UF2 Firmware File
+
 Once activation is complete, a drive named `STM411BOOT` should appear.
-Put the file `firmware.uf2` to the drive and the flash process should start automatically.
+Copy the file `firmware.uf2` to the drive and the flash process should start automatically.
 
 ---
 
